@@ -1,6 +1,6 @@
 /*
   Put this in a bookmark:
-  javascript:var s=document.createElement('script');s.src='https://reheatedcake.io/trianglifier/bookmarklet.js';document.body.appendChild(s);
+  javascript:var s=document.createElement('script');s.src='https://reheatedcake.io/trianglifier/sneaky.js';document.body.appendChild(s);
 */
 function trianglify(image) {
   const triangles = 40;
