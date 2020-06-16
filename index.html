@@ -290,7 +290,7 @@ function run() {
 
   // sometimes we cannot export images due to... security (cross-origin requests via tainted canvases)
   try {
-    const imgData = canvas.toDataURL('image/jpg');
+    const imgData = canvas.toDataURL('image/png');
     const img = document.createElement('img');
     img.src = imgData;
     container.appendChild(img);
@@ -298,7 +298,7 @@ function run() {
     // create a download button
     const dlBtn = document.createElement('a');
     dlBtn.className = 'ui button icon blue';
-    dlBtn.download = 'trianglified.jpg';
+    dlBtn.download = 'trianglified.png';
     dlBtn.href = imgData;
     dlBtn.title = 'Download Image';
     const dlIcon = document.createElement('i');
