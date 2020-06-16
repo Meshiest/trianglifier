@@ -210,7 +210,7 @@ function debounce(func, wait, immediate) {
 );
 
 // check if a URL is valid (debounced)
-const checkImageSource = debounce((elem, src) => {
+const checkImageSource = debounce((src, elem) => {
   image = null;
   const img = new Image();
   img.src = src;
@@ -218,11 +218,12 @@ const checkImageSource = debounce((elem, src) => {
     if (img.width > 0 && img.height > 0) {
       $('#runBtn').classList.remove('disabled');
       image = img;
+      run();
     } else {
-      $(elem).classList.add('error');
+      elem && $(elem).classList.add('error');
     }
   }
-  img.onerror = err => $(elem).classList.add('error');
+  img.onerror = err => elem && $(elem).classList.add('error');
 
 }, 500);
 
@@ -235,7 +236,7 @@ function urlInputChange(e) {
   // run if there is a url
   const url = e.target.value;
   if (url.length > 0)
-    checkImageSource('#urlField', url);
+    checkImageSource(url, '#urlField');
 }
 
 // called when file input changes
@@ -250,7 +251,7 @@ function fileInputChange(e) {
   if (files.length > 0) {
     $('#wrapperText').innerText = files[0].name.slice(0, 20) + (files[0].name.length > 20 ? '...' : '');
     const file = URL.createObjectURL(files[0]);
-    checkImageSource('#fileField', file);
+    checkImageSource(file, '#fileField');
   }
 }
 
@@ -259,10 +260,26 @@ $('#urlInput').addEventListener('change', urlInputChange);
 $('#urlInput').addEventListener('keyup', urlInputChange);
 $('#fileInput').addEventListener('change', fileInputChange);
 
+document.onpaste = e => {
+  const items = e.clipboardData.items;
+  if (items.length === 1 && items[0].type.indexOf('image') === 0) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      checkImageSource(event.target.result);
+      $('#wrapperText').innerText = 'Pasted Image';
+    };
+    reader.readAsDataURL(items[0].getAsFile());
+  }
+};
+
 $('#runBtn').addEventListener('click', e => {
   // this won't run, but just in case :)
   if ($('#runBtn').classList.contains('disabled')) return;
 
+  run();
+});
+
+function run() {
   $('#outputMsg') && $('#outputMsg').remove();
 
   // generate the trianglified image
@@ -299,7 +316,7 @@ $('#runBtn').addEventListener('click', e => {
 
   // add it to the output area
   $('#output').prepend(container);
-});
+}
 
 // create canvas copy, draw an image to it
 function newCanvas(image) {
