@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Trianglifies things">
+    <title>Trianglifier</title>
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Staatliches&display=swap">
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css">
+    <style>
+      body {
+        background-color: #222;
+      }
+
+      .title-container {
+        position: relative;
+        display: inline-block;
+        margin: 1em auto;
+      }
+
+      #title {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      .title-text {
+        font-family: 'Staatliches' !important;
+        margin: 0 !important;
+        color: white !important;
+        font-weight: normal !important;
+        line-height: 1;
+        font-size: 80px !important;
+      }
+
+      .centered {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+
+      .content {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 1em;
+      }
+
+      .file-wrapper {
+        background-color: white;
+        border-radius: .28571429rem;
+        position: relative;
+        cursor: pointer
+      }
+
+      .wrapper-text {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: calc(100% - 8px);
+        height: calc(100% - 8px);
+        border: 2px #ccc dashed;
+        color: #999;
+        font-family: 'Lato';
+        border-radius: .28571429rem;
+        pointer-events: none;
+      }
+
+      input[type=file] {
+        cursor: pointer;
+        opacity: 0;
+      }
+
+      h2 {
+        text-align: center;
+      }
+
+      #output {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        max-width: 400px;
+      }
+
+      .output-image {
+        max-width: 400px;
+        margin: 7px 0;
+        position: relative;
+      }
+
+      .output-image img {
+        max-width: 100%;
+        height: auto;
+      }
+
+      .download-btn {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        margin-right: 0 !important;
+      }
+
+      .buttons .button {
+        padding: 7px 14px !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="centered">
+      <div class="title-container">
+        <span class="ui header title-text">Trianglifier</span>
+        <canvas id="title"></canvas>
+      </div>
+    </div>
+    <div class="content">
+      <h2 class="ui header inverted">Select an Image</h2>
+      <div class="ui form inverted">
+        <div class="ui field" id="urlField">
+          <label>Paste Image URL</label>
+          <input id="urlInput" type="text" placeholder="Paste Image URL">
+        </div>
+        <div class="ui divider horizontal inverted">OR</div>
+         <div class="ui field" id="fileField">
+          <label>Upload File</label>
+          <div class="file-wrapper">
+            <input id="fileInput" type="file">
+            <div class="wrapper-text" id="wrapperText">
+              Click Here or Drag Image
+            </div>
+          </div>
+        </div>
+        <h2 class="ui header inverted">Customize Settings</h2>
+        <div class="ui field">
+          <label>How many triangles?</label>
+          <div class="ui buttons group centered">
+            <button data-amount="1" data-kind="triangles" class="ui button">One</button>
+            <button data-amount="10" data-kind="triangles" class="ui button green">Some</button>
+            <button data-amount="25" data-kind="triangles" class="ui button">Many</button>
+            <button data-amount="50" data-kind="triangles" class="ui button">Plenty</button>
+            <button data-amount="100" data-kind="triangles" class="ui button">TONS</button>
+          </div>
+        </div>
+        <div class="ui field">
+          <label>How much distortion?</label>
+          <div class="ui buttons group centered">
+            <button data-amount="0.1" data-kind="scaleAmt" class="ui button green">Little</button>
+            <button data-amount="0.2" data-kind="scaleAmt" class="ui button">Some</button>
+            <button data-amount="0.4" data-kind="scaleAmt" class="ui button">More</button>
+            <button data-amount="1" data-kind="scaleAmt" class="ui button">Much</button>
+            <button data-amount="2" data-kind="scaleAmt" class="ui button">TONS</button>
+          </div>
+        </div>
+        <h2 class="ui header inverted"></h2>
+        <div class="centered">
+          <button class="ui button primary disabled" id="runBtn">Trianglify</button>
+        </div>
+      </div>
+      <h2 class="ui header inverted">Output</h2>
+      <div id="output">
+        <i id="outputMsg" class="ui centered header inverted">Click 'Trianglify' to trianglify some pictures</i>
+      </div>
+    </div>
+    <footer class="centered">
+      <a href="https://github.com/meshiest/trianglifier">Read the Code</a>
+    </footer>
+  </body>
+
+  <script>
+// low budget jquery
+const $ = document.querySelector.bind(document);
+const $$ = q => Array.from(document.querySelectorAll(q));
+
+const options = {
+  triangles: 25,
+  scaleAmt: 0.1,
+};
+
+let image;
+
+// the classic debounce
+function debounce(func, wait, immediate) {
+  let timeout;
+  return function() {
+    const context = this, args = arguments;
+    const later = () => {
+      timeout = null;
+      if (!immediate) func.apply(context, args);
+    };
+    const callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+    if (callNow) func.apply(context, args);
+  };
+};
+
+// turn the buttons into something like a radio input
+['triangles', 'scaleAmt'].map(kind =>
+  $$(`[data-kind=${kind}]`).forEach(b => {
+    b.addEventListener('click', e => {
+      e.preventDefault();
+      $$(`[data-kind=${kind}]`).forEach(el => el.classList.remove('green'));
+      b.classList.add('green');
+      options[kind] = Number(b.getAttribute('data-amount'));
+    })
+  })
+);
+
+// check if a URL is valid (debounced)
+const checkImageSource = debounce((elem, src) => {
+  image = null;
+  const img = new Image();
+  img.src = src;
+  img.onload = res => {
+    if (img.width > 0 && img.height > 0) {
+      $('#runBtn').classList.remove('disabled');
+      image = img;
+    } else {
+      $(elem).classList.add('error');
+    }
+  }
+  img.onerror = err => $(elem).classList.add('error');
+
+}, 500);
+
+// called when the url input changes
+function urlInputChange(e) {
+  // reset error state, disable button
+  $('#runBtn').classList.add('disabled');
+  $('#urlField').classList.remove('error');
+
+  // run if there is a url
+  const url = e.target.value;
+  if (url.length > 0)
+    checkImageSource('#urlField', url);
+}
+
+// called when file input changes
+function fileInputChange(e) {
+  // reset error state, disable button
+  $('#runBtn').classList.add('disabled');
+  $('#fileField').classList.remove('error');
+  $('#wrapperText').innerText = 'Click Here or Drag Image';
+
+  // run if there is a file
+  const files = e.target.files;
+  if (files.length > 0) {
+    $('#wrapperText').innerText = files[0].name.slice(0, 20) + (files[0].name.length > 20 ? '...' : '');
+    const file = URL.createObjectURL(files[0]);
+    checkImageSource('#fileField', file);
+  }
+}
+
+// add listeners
+$('#urlInput').addEventListener('change', urlInputChange);
+$('#urlInput').addEventListener('keyup', urlInputChange);
+$('#fileInput').addEventListener('change', fileInputChange);
+
+$('#runBtn').addEventListener('click', e => {
+  // this won't run, but just in case :)
+  if ($('#runBtn').classList.contains('disabled')) return;
+
+  $('#outputMsg') && $('#outputMsg').remove();
+
+  // generate the trianglified image
+  const canvas = trianglify(newCanvas(image), options);
+  const imgData = canvas.toDataURL('image/jpg');
+  const img = document.createElement('img');
+  img.src = imgData;
+
+  // wrap it in a nice little container
+  const container = document.createElement('div');
+  container.className = 'ui rounded image output-image';
+  container.appendChild(img);
+
+  // create a download button
+  const dlBtn = document.createElement('a');
+  dlBtn.className = 'ui button icon primary download-btn';
+  dlBtn.download = 'trianglified.jpg';
+  dlBtn.href = imgData;
+  dlBtn.title = 'Download Image';
+  const dlIcon = document.createElement('i');
+  dlIcon.className = 'ui icon download';
+  dlBtn.appendChild(dlIcon);
+  container.appendChild(dlBtn);
+
+  // add it to the output area
+  $('#output').prepend(container);
+});
+
+// create canvas copy, draw an image to it
+function newCanvas(image) {
+  // create the element
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  // set the canvas size
+  canvas.style.width = (ctx.canvas.width = image.width) + 'px';
+  canvas.style.height = (ctx.canvas.height = image.height) + 'px';
+
+  // draw the image
+  image && ctx.drawImage(image, 0, 0);
+
+  return canvas;
+};
+
+// generate a nice pseudo-random triangle within the width and height of an image
+function genTriangle(w, h) {
+  const size = Math.min(w, h);
+  // generate a random triangle radius size
+  const randMag = () => Math.random() * size/4 + size/8;
+
+  // generate random relatively evenly distributed angles around a circle
+  const arcA = Math.random() * Math.PI;
+  const arcB = arcA + (Math.random() * Math.PI / 4 - Math.PI / 8) + Math.PI * 2 / 3;
+  const arcC = arcB + (Math.random() * Math.PI / 4 - Math.PI / 8) + Math.PI * 2 / 3;
+
+  // convert some polar coordinates to cartesian coordinates
+  const polarToCartesian = (ang, mag, [x, y]) => [
+    Math.floor(Math.cos(ang) * mag + x),
+    Math.floor(Math.sin(ang) * mag + y),
+  ];
+
+  // randomly center the triangle
+  const center = [
+    (Math.random() * 0.8 + 0.1) * w,
+    (Math.random() * 0.8 + 0.1) * h,
+  ];
+
+  // return randomly generated triangle and its center
+  return {
+    points: [arcA, arcB, arcC].map(rad => polarToCartesian(rad, randMag(), center)),
+    center,
+  };
+};
+
+// function to repetitively cut a triangle chunk out of an image and scale it
+function trianglify (canvas, {triangles=25, scaleAmt=0.1, slow=0}={}) {
+  const run = () => {
+    const ctx = canvas.getContext('2d');
+    // save canvas state
+    ctx.save();
+
+    // create pseudo-random triangle somewhere in the image
+    ctx.beginPath();
+    const {points: [start, ...points], center} = genTriangle(ctx.canvas.width, ctx.canvas.height);
+
+    // draw the triangle
+    ctx.moveTo(...start);
+    points.forEach(p => ctx.lineTo(...p));
+
+    // scale the canvas and offset it so it's scaled from the middle (difference in centers)
+    const scale = Math.random() * scaleAmt + 1;
+    ctx.translate((center[0]-center[0]*scale), (center[1]-center[1]*scale));
+    ctx.scale(scale, scale);
+
+    // clip the canvas to the triangle
+    ctx.clip();
+
+    // draw the image in the translated and scaled triangle
+    ctx.drawImage(canvas, 0, 0);
+
+    // ready for next round
+    ctx.restore();
+  }
+
+  // run the trianglification
+  for(let i = 0; i < triangles; i++) {
+    if (slow > 0)
+      setTimeout(run, i * slow);
+    else
+      run();
+  }
+
+  return canvas;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // trianglify the title
+  setTimeout(() => {
+    const titleCanvas = $('#title');
+    const titleText = $('.title-text');
+
+    // setup title canvas
+    const { width, height } = titleText.getBoundingClientRect();
+    var ctx = titleCanvas.getContext('2d');
+    titleCanvas.style.width = (ctx.canvas.width = width) + 'px';
+    titleCanvas.style.height = (ctx.canvas.height = height) + 'px';
+
+    // draw background (otherwise transparency will mess with the trianglification)
+    ctx.fillStyle = '#222';
+    ctx.fillRect(0, 0, width, height);
+
+    // draw the text
+    ctx.fillStyle = 'white';
+    ctx.font = '80px "Staatliches"';
+    ctx.textBaseline = 'ideographic';
+    ctx.fillText(titleText.innerText, 0, height);
+
+    // now trianglify it (animated)
+    trianglify(titleCanvas, {triangles: 200, scaleAmt: 0.2, slow: 100});
+  }, 500);
+})
+
+
+  </script>
+</html>
