@@ -297,7 +297,7 @@ function run() {
 
     // create a download button
     const dlBtn = document.createElement('a');
-    dlBtn.className = 'ui button icon primary download-btn';
+    dlBtn.className = 'ui button icon blue';
     dlBtn.download = 'trianglified.jpg';
     dlBtn.href = imgData;
     dlBtn.title = 'Download Image';
@@ -305,6 +305,40 @@ function run() {
     dlIcon.className = 'ui icon download';
     dlBtn.appendChild(dlIcon);
     container.appendChild(dlBtn);
+
+    // create a clipboard button
+    const cpBtn = document.createElement('button');
+    const cpIcon = document.createElement('i');
+    cpBtn.className = 'ui button icon green';
+    const resetIcon = debounce(() => {
+      cpIcon.className = 'ui icon clipboard';
+    }, 1000)
+    cpBtn.onclick = () => {
+      try {
+        canvas.toBlob(blob =>
+          navigator.clipboard.write([
+            new ClipboardItem({'image/png': blob})
+          ])
+        );
+        cpIcon.className = 'ui icon clipboard check';
+        resetIcon();
+
+      } catch(e) {
+        console.log(e);
+        // if it doesn't work, pretend that I didn't actually make that mistake in the first place
+        cpBtn.remove();
+      }
+    }
+    cpBtn.title = 'Copy';
+    cpIcon.className = 'ui icon clipboard';
+    cpBtn.appendChild(cpIcon);
+
+    const buttons = document.createElement('div');
+    buttons.className = 'ui buttons group download-btn';
+    buttons.appendChild(cpBtn);
+    buttons.appendChild(dlBtn);
+    container.appendChild(buttons);
+
   } catch (err) {
     // just render the canvas lol
     const ratio = canvas.height/canvas.width;
