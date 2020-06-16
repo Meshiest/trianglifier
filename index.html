@@ -119,12 +119,11 @@
     <div class="content">
       <h2 class="ui header inverted">Select an Image</h2>
       <div class="ui form inverted">
-        <!-- Unfortunately this is a security vulnerability :( -->
-        <!-- <div class="ui field" id="urlField">
+        <div class="ui field" id="urlField">
           <label>Paste Image URL</label>
           <input id="urlInput" type="text" placeholder="Paste Image URL">
         </div>
-        <div class="ui divider horizontal inverted">OR</div> -->
+        <div class="ui divider horizontal inverted">OR</div>
          <div class="ui field" id="fileField">
           <label>Upload File</label>
           <div class="file-wrapper">
@@ -256,8 +255,8 @@ function fileInputChange(e) {
 }
 
 // add listeners
-// $('#urlInput').addEventListener('change', urlInputChange);
-// $('#urlInput').addEventListener('keyup', urlInputChange);
+$('#urlInput').addEventListener('change', urlInputChange);
+$('#urlInput').addEventListener('keyup', urlInputChange);
 $('#fileInput').addEventListener('change', fileInputChange);
 
 $('#runBtn').addEventListener('click', e => {
@@ -268,25 +267,35 @@ $('#runBtn').addEventListener('click', e => {
 
   // generate the trianglified image
   const canvas = trianglify(newCanvas(image), options);
-  const imgData = canvas.toDataURL('image/jpg');
-  const img = document.createElement('img');
-  img.src = imgData;
-
   // wrap it in a nice little container
   const container = document.createElement('div');
   container.className = 'ui rounded image output-image';
-  container.appendChild(img);
 
-  // create a download button
-  const dlBtn = document.createElement('a');
-  dlBtn.className = 'ui button icon primary download-btn';
-  dlBtn.download = 'trianglified.jpg';
-  dlBtn.href = imgData;
-  dlBtn.title = 'Download Image';
-  const dlIcon = document.createElement('i');
-  dlIcon.className = 'ui icon download';
-  dlBtn.appendChild(dlIcon);
-  container.appendChild(dlBtn);
+  // sometimes we cannot export images due to... security (cross-origin requests via tainted canvases)
+  try {
+    const imgData = canvas.toDataURL('image/jpg');
+    const img = document.createElement('img');
+    img.src = imgData;
+    container.appendChild(img);
+
+    // create a download button
+    const dlBtn = document.createElement('a');
+    dlBtn.className = 'ui button icon primary download-btn';
+    dlBtn.download = 'trianglified.jpg';
+    dlBtn.href = imgData;
+    dlBtn.title = 'Download Image';
+    const dlIcon = document.createElement('i');
+    dlIcon.className = 'ui icon download';
+    dlBtn.appendChild(dlIcon);
+    container.appendChild(dlBtn);
+  } catch (err) {
+    // just render the canvas lol
+    const ratio = canvas.height/canvas.width;
+    canvas.style.width = $('#output').clientWidth + 'px';
+    canvas.style.height = $('#output').clientWidth*ratio + 'px';
+    container.appendChild(canvas);
+  }
+
 
   // add it to the output area
   $('#output').prepend(container);
@@ -299,8 +308,8 @@ function newCanvas(image) {
   const ctx = canvas.getContext('2d');
 
   // set the canvas size
-  canvas.style.width = (ctx.canvas.width = image.width) + 'px';
-  canvas.style.height = (ctx.canvas.height = image.height) + 'px';
+  canvas.style.width = (canvas.width = ctx.canvas.width = image.width) + 'px';
+  canvas.style.height = (canvas.height = ctx.canvas.height = image.height) + 'px';
 
   // draw the image
   image && ctx.drawImage(image, 0, 0);
