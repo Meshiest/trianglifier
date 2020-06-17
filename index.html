@@ -261,8 +261,9 @@ $('#urlInput').addEventListener('keyup', urlInputChange);
 $('#fileInput').addEventListener('change', fileInputChange);
 
 document.onpaste = e => {
-  const items = e.clipboardData.items;
-  if (items.length === 1 && items[0].type.indexOf('image') === 0) {
+  const items = Array.from(e.clipboardData.items)
+    .filter(i => i.type.indexOf('image') === 0);
+  if (items.length > 0) {
     const reader = new FileReader();
     reader.onload = function(event) {
       checkImageSource(event.target.result);
